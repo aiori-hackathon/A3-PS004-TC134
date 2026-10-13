@@ -1,0 +1,7 @@
+docs/
+desktop.ini
+*.pyc
+__pycache__/
+.venv/
+build/
+sdkconfig

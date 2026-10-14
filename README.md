@@ -51,12 +51,12 @@ The evaluation will use a healthy baseline and three controlled DNSSEC validatio
 
 | **Test Case** | **Controlled Condition**                                                                                               |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| T1            | `SECURE` — Valid DNSSEC signatures and authenticated chain of trust                                                    |
-| T2            | `INSECURE` — Legitimately unsigned zone with appropriate proof of non-delegation of trust                              |
-| T3            | `BOGUS` — Deliberately corrupted DNSSEC signature or validation chain                                                  |
-| T4            | Trusted gateway — Client verifies the gateway certificate and hostname                                                 |
-| T5            | Untrusted gateway — Client rejects an untrusted or mismatched certificate                                              |
-| T6            | Operational failure — Timeout or resolution failure handled without being misclassified as a DNSSEC validation failure |
+| T1            | `SECURE` - Valid DNSSEC signatures and authenticated chain of trust                                                    |
+| T2            | `INSECURE` - Legitimately unsigned zone with appropriate proof of non-delegation of trust                              |
+| T3            | `BOGUS` - Deliberately corrupted DNSSEC signature or validation chain                                                  |
+| T4            | Trusted gateway - Client verifies the gateway certificate and hostname                                                 |
+| T5            | Untrusted gateway - Client rejects an untrusted or mismatched certificate                                              |
+| T6            | Operational failure - Timeout or resolution failure handled without being misclassified as a DNSSEC validation failure |
 
 Run at least **100 resolution trials per mode**, where practical, for the baseline and gateway-assisted configurations. Record the exact test conditions, cache state, network conditions, and client configuration.
 
@@ -103,11 +103,11 @@ Energy consumption will be considered only if suitable measurement hardware is a
 
 ## Standards and Related Work
 
-- [RFC 4033 — DNS Security Introduction and Requirements](https://www.rfc-editor.org/rfc/rfc4033)
-- [RFC 4035 — Protocol Modifications for the DNS Security Extensions](https://www.rfc-editor.org/rfc/rfc4035)
-- [RFC 7858 — Specification for DNS over Transport Layer Security (TLS)](https://www.rfc-editor.org/rfc/rfc7858)
-- [RFC 9520 — Negative Caching of DNS Resolution Failures](https://www.rfc-editor.org/rfc/rfc9520)
-- [Unbound Documentation — NLnet Labs](https://unbound.docs.nlnetlabs.nl/en/latest/)
+- [RFC 4033 - DNS Security Introduction and Requirements](https://www.rfc-editor.org/rfc/rfc4033)
+- [RFC 4035 - Protocol Modifications for the DNS Security Extensions](https://www.rfc-editor.org/rfc/rfc4035)
+- [RFC 7858 - Specification for DNS over Transport Layer Security (TLS)](https://www.rfc-editor.org/rfc/rfc7858)
+- [RFC 9520 - Negative Caching of DNS Resolution Failures](https://www.rfc-editor.org/rfc/rfc9520)
+- [Unbound Documentation - NLnet Labs](https://unbound.docs.nlnetlabs.nl/en/latest/)
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
 - [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/)
 
@@ -117,6 +117,6 @@ Our contribution is a controlled and evidence-driven evaluation of gateway-assis
 
 **Status:** Implementation and testing are being carried out incrementally. Final functionality, security results, and performance findings will be documented after verification through actual test runs.
 
-**Team TwinStacks — Secure Resolution. Trusted Connections. Measurable Performance.**
+**Team TwinStacks - Secure Resolution. Trusted Connections. Measurable Performance.**
 
 Add concrete team member rolesClarify the client–gateway data flow

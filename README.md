@@ -117,6 +117,9 @@ Our contribution is a controlled and evidence-driven evaluation of gateway-assis
 
 **Status:** Implementation and testing are being carried out incrementally. Final functionality, security results, and performance findings will be documented after verification through actual test runs.
 
-**Team TwinStacks - Secure Resolution. Trusted Connections. Measurable Performance.**
+**Team TwinStacks — Secure Resolution. Trusted Connections. Measurable Performance.**
 
-Add concrete team member rolesClarify the client–gateway data flow
+### Team Roles & Responsibilities
+- **Anshuman Katyan Jha (Team Member B - Platform & Gateway Lead)**: Gateway API development (FastAPI), Unbound validating resolver configuration, local controlled DNSSEC test environment, and automated performance benchmarking.
+- **Anusmriti Sinha Roy (Team Member A - IoT & Security Lead)**: ESP32-WROOM-32 firmware development (ESP-IDF C/C++), TLS transport security, certificate verification, client-side response policy enforcement, and client resource measurement.
+- **Jhalak Dutta (Faculty Mentor)**: Academic guidance, protocol verification, and architectural oversight.

@@ -21,6 +21,18 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
+# 2. Check for required DNSSEC signing tools
+if ! command -v dnssec-keygen &> /dev/null; then
+    echo -e "${YELLOW}[!] dnssec-keygen not found. Installing bind-dnssec-utils via dnf...${NC}"
+    dnf install -y bind-dnssec-utils
+fi
+
+if ! command -v dnssec-keygen &> /dev/null; then
+    echo -e "${RED}[ERROR] dnssec-keygen is still missing. Please run:${NC}"
+    echo -e "  sudo dnf install -y bind-dnssec-utils"
+    exit 1
+fi
+
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 DNS_LAB_DIR="${REPO_ROOT}/src/dns-lab"
 GATEWAY_DIR="${REPO_ROOT}/src/gateway"
@@ -32,7 +44,7 @@ mkdir -p "${KEYS_DIR}"
 mkdir -p "/etc/unbound"
 mkdir -p "${VAR_NAMED}/data"
 
-# 2. Generate Cryptographic DNSSEC Keys (Algorithm 13: ECDSAP256SHA256)
+# 3. Generate Cryptographic DNSSEC Keys (Algorithm 13: ECDSAP256SHA256)
 echo -e "${GREEN}[2/7] Generating DNSSEC Cryptographic Key Pairs (Algorithm 13: ECDSA P-256)...${NC}"
 cd "${KEYS_DIR}"
 rm -f Kiotlab.internal.*
@@ -45,7 +57,7 @@ echo -e "  Generated KSK: ${KSK_FILE}"
 ZSK_FILE=$(dnssec-keygen -a ECDSAP256SHA256 -n ZONE iotlab.internal)
 echo -e "  Generated ZSK: ${ZSK_FILE}"
 
-# 3. Assemble and Sign Zone: iotlab.internal
+# 4. Assemble and Sign Zone: iotlab.internal
 echo -e "${GREEN}[3/7] Assembling and cryptographically signing iotlab.internal zone...${NC}"
 ZONE_RAW="${DNS_LAB_DIR}/zones/db.iotlab.internal"
 ZONE_SIGNED="${DNS_LAB_DIR}/zones/db.iotlab.internal.signed"
@@ -62,14 +74,14 @@ cat "${KEYS_DIR}/${ZSK_FILE}.key" >> "${ZONE_TEMP}"
 dnssec-signzone -S -K "${KEYS_DIR}" -o iotlab.internal -f "${ZONE_SIGNED}" "${ZONE_TEMP}"
 echo -e "  Zone signed successfully: ${ZONE_SIGNED}"
 
-# 4. Create the BOGUS Condition (Deliberate Signature Tampering)
+# 5. Create the BOGUS Condition (Deliberate Signature Tampering)
 echo -e "${GREEN}[4/7] Inducing controlled BOGUS condition (simulating DNS tampering/spoofing)...${NC}"
 # Tamper with the A record of bogus.iotlab.internal in the signed file without updating the RRSIG!
 # RFC 4035 §5.3: Signature verification will fail because the data hash no longer matches the RRSIG signature!
 sed -i 's/bogus.iotlab.internal.\s*300\s*IN\s*A\s*192.168.1.102/bogus.iotlab.internal. 300 IN A 192.168.1.222/' "${ZONE_SIGNED}"
 echo -e "  Tampered A record for bogus.iotlab.internal (IP changed to 192.168.1.222 without re-signing)."
 
-# 5. Deploy Zones to BIND Authoritative Server
+# 6. Deploy Zones to BIND Authoritative Server
 echo -e "${GREEN}[5/7] Deploying zone files and configuring BIND (named on port 5300)...${NC}"
 cp "${ZONE_SIGNED}" "${VAR_NAMED}/db.iotlab.internal.signed"
 cp "${DNS_LAB_DIR}/zones/db.insecure.iotlab.internal" "${VAR_NAMED}/db.insecure.iotlab.internal"
@@ -86,7 +98,7 @@ named-checkconf /etc/named.conf
 systemctl restart named
 echo -e "  BIND authoritative server running on 127.0.0.1:5300."
 
-# 6. Configure Unbound Validating Resolver with Local Trust Anchor
+# 7. Configure Unbound Validating Resolver with Local Trust Anchor
 echo -e "${GREEN}[6/7] Configuring Unbound with Lab Trust Anchor (port 5353)...${NC}"
 TRUST_ANCHOR_CONF="/etc/unbound/local-trust-anchor.conf"
 
@@ -111,7 +123,7 @@ unbound-checkconf /etc/unbound/unbound.conf
 systemctl restart unbound
 echo -e "  Unbound validating resolver running on 127.0.0.1:5353."
 
-# 7. Verification Summary
+# 8. Verification Summary
 echo -e "${BLUE}====================================================================${NC}"
 echo -e "${GREEN}  SUCCESS: Controlled DNSSEC Lab is Ready!${NC}"
 echo -e "${BLUE}====================================================================${NC}"

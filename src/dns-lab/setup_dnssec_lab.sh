@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # PS-004: Automated Controlled DNSSEC Lab Setup Script
-# Configures Authoritative BIND (port 5300) and Validating Unbound (port 5353)
+# Configures Authoritative BIND (port 5300) and Validating Unbound (port 1053)
 # ==============================================================================
 set -euo pipefail
 
@@ -27,10 +27,16 @@ if ! command -v dnssec-keygen &> /dev/null; then
     dnf install -y bind-dnssec-utils
 fi
 
-if ! command -v dnssec-keygen &> /dev/null; then
-    echo -e "${RED}[ERROR] dnssec-keygen is still missing. Please run:${NC}"
-    echo -e "  sudo dnf install -y bind-dnssec-utils"
-    exit 1
+# 3. Handle Fedora SELinux for custom lab ports (5300 & 1053)
+echo -e "${GREEN}[1/7] Configuring Fedora permissions and SELinux for lab ports...${NC}"
+if ! command -v semanage &> /dev/null; then
+    dnf install -y policycoreutils-python-utils 2>/dev/null || true
+fi
+
+if command -v semanage &> /dev/null; then
+    # Allow named and unbound to run on custom lab ports without kernel socket denial
+    semanage permissive -a named_t 2>/dev/null || true
+    semanage permissive -a unbound_t 2>/dev/null || true
 fi
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -39,12 +45,11 @@ GATEWAY_DIR="${REPO_ROOT}/src/gateway"
 VAR_NAMED="/var/named"
 KEYS_DIR="${DNS_LAB_DIR}/keys"
 
-echo -e "${GREEN}[1/7] Ensuring required tools and directories are present...${NC}"
 mkdir -p "${KEYS_DIR}"
 mkdir -p "/etc/unbound"
 mkdir -p "${VAR_NAMED}/data"
 
-# 3. Generate Cryptographic DNSSEC Keys (Algorithm 13: ECDSAP256SHA256)
+# 4. Generate Cryptographic DNSSEC Keys (Algorithm 13: ECDSAP256SHA256)
 echo -e "${GREEN}[2/7] Generating DNSSEC Cryptographic Key Pairs (Algorithm 13: ECDSA P-256)...${NC}"
 cd "${KEYS_DIR}"
 rm -f Kiotlab.internal.*
@@ -57,7 +62,7 @@ echo -e "  Generated KSK: ${KSK_FILE}"
 ZSK_FILE=$(dnssec-keygen -a ECDSAP256SHA256 -n ZONE iotlab.internal)
 echo -e "  Generated ZSK: ${ZSK_FILE}"
 
-# 4. Assemble and Sign Zone: iotlab.internal
+# 5. Assemble and Sign Zone: iotlab.internal
 echo -e "${GREEN}[3/7] Assembling and cryptographically signing iotlab.internal zone...${NC}"
 ZONE_RAW="${DNS_LAB_DIR}/zones/db.iotlab.internal"
 ZONE_SIGNED="${DNS_LAB_DIR}/zones/db.iotlab.internal.signed"
@@ -74,22 +79,24 @@ cat "${KEYS_DIR}/${ZSK_FILE}.key" >> "${ZONE_TEMP}"
 dnssec-signzone -S -K "${KEYS_DIR}" -o iotlab.internal -f "${ZONE_SIGNED}" "${ZONE_TEMP}"
 echo -e "  Zone signed successfully: ${ZONE_SIGNED}"
 
-# 5. Create the BOGUS Condition (Deliberate Signature Tampering)
+# 6. Create the BOGUS Condition (Deliberate Signature Tampering)
 echo -e "${GREEN}[4/7] Inducing controlled BOGUS condition (simulating DNS tampering/spoofing)...${NC}"
 # Tamper with the A record of bogus.iotlab.internal in the signed file without updating the RRSIG!
 # RFC 4035 §5.3: Signature verification will fail because the data hash no longer matches the RRSIG signature!
 sed -i 's/bogus.iotlab.internal.\s*300\s*IN\s*A\s*192.168.1.102/bogus.iotlab.internal. 300 IN A 192.168.1.222/' "${ZONE_SIGNED}"
 echo -e "  Tampered A record for bogus.iotlab.internal (IP changed to 192.168.1.222 without re-signing)."
 
-# 6. Deploy Zones to BIND Authoritative Server
+# 7. Deploy Zones to BIND Authoritative Server
 echo -e "${GREEN}[5/7] Deploying zone files and configuring BIND (named on port 5300)...${NC}"
 cp "${ZONE_SIGNED}" "${VAR_NAMED}/db.iotlab.internal.signed"
 cp "${DNS_LAB_DIR}/zones/db.insecure.iotlab.internal" "${VAR_NAMED}/db.insecure.iotlab.internal"
 cp "${DNS_LAB_DIR}/config/named.conf" "/etc/named.conf"
 
 chown -R named:named "${VAR_NAMED}"
+chmod 644 "${VAR_NAMED}"/db.*
 chown named:named "/etc/named.conf"
 chmod 640 "/etc/named.conf"
+restorecon -Rv "${VAR_NAMED}" >/dev/null 2>&1 || true
 
 # Verify BIND configuration syntax
 named-checkconf /etc/named.conf
@@ -98,8 +105,8 @@ named-checkconf /etc/named.conf
 systemctl restart named
 echo -e "  BIND authoritative server running on 127.0.0.1:5300."
 
-# 7. Configure Unbound Validating Resolver with Local Trust Anchor
-echo -e "${GREEN}[6/7] Configuring Unbound with Lab Trust Anchor (port 5353)...${NC}"
+# 8. Configure Unbound Validating Resolver with Local Trust Anchor
+echo -e "${GREEN}[6/7] Configuring Unbound with Lab Trust Anchor (port 1053)...${NC}"
 TRUST_ANCHOR_CONF="/etc/unbound/local-trust-anchor.conf"
 
 # Extract the KSK DNSKEY record format for Unbound's trust-anchor directive
@@ -115,15 +122,16 @@ chown unbound:unbound "${TRUST_ANCHOR_CONF}"
 # Deploy Unbound configuration
 cp "${GATEWAY_DIR}/unbound/unbound.conf" "/etc/unbound/unbound.conf"
 chown unbound:unbound "/etc/unbound/unbound.conf"
+restorecon -Rv "/etc/unbound" >/dev/null 2>&1 || true
 
 # Verify Unbound configuration
 unbound-checkconf /etc/unbound/unbound.conf
 
 # Restart Unbound
 systemctl restart unbound
-echo -e "  Unbound validating resolver running on 127.0.0.1:5353."
+echo -e "  Unbound validating resolver running on 127.0.0.1:1053."
 
-# 8. Verification Summary
+# 9. Verification Summary
 echo -e "${BLUE}====================================================================${NC}"
 echo -e "${GREEN}  SUCCESS: Controlled DNSSEC Lab is Ready!${NC}"
 echo -e "${BLUE}====================================================================${NC}"

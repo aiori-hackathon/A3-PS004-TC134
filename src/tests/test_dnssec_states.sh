@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # PS-004: Automated Verification Script for DNSSEC Validation Outcomes
-# Tests Unbound (127.0.0.1:5353) against Controlled Test Lab (SECURE, INSECURE, BOGUS)
+# Tests Unbound (127.0.0.1:1053) against Controlled Test Lab (SECURE, INSECURE, BOGUS)
 # ==============================================================================
 set -euo pipefail
 
@@ -13,7 +13,7 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 
 RESOLVER_IP="127.0.0.1"
-RESOLVER_PORT="5353"
+RESOLVER_PORT="1053"
 
 echo -e "${BLUE}====================================================================${NC}"
 echo -e "${BLUE}  PS-004: Running DNSSEC Validation Verification Test Suite         ${NC}"

@@ -1,0 +1,19 @@
+;
+; Zone file for insecure.iotlab.internal (Legitimately Unsigned Delegated Zone)
+;
+$TTL 300
+@       IN      SOA     ns1.insecure.iotlab.internal. admin.insecure.iotlab.internal. (
+                        2026102501 ; Serial
+                        3600       ; Refresh
+                        1800       ; Retry
+                        604800     ; Expire
+                        300        ; Negative Caching TTL
+)
+
+; Name Servers (Unsigned)
+@       IN      NS      ns1.insecure.iotlab.internal.
+ns1     IN      A       127.0.0.1
+
+; Unsigned A Record: Provably Insecure because parent zone has NSEC with no DS
+@       IN      A       192.168.1.101
+api     IN      A       192.168.1.101

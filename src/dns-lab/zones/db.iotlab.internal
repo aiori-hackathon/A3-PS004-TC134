@@ -1,0 +1,28 @@
+;
+; Zone file for iotlab.internal (Parent & Primary Lab Zone)
+;
+$TTL 300
+@       IN      SOA     ns1.iotlab.internal. admin.iotlab.internal. (
+                        2026102501 ; Serial
+                        3600       ; Refresh
+                        1800       ; Retry
+                        604800     ; Expire
+                        300        ; Negative Caching TTL (RFC 2308/9520)
+)
+
+; Name Servers
+@       IN      NS      ns1.iotlab.internal.
+ns1     IN      A       127.0.0.1
+
+; Gateway Host Record
+gw      IN      A       192.168.1.120
+
+; 1. SECURE Case: Validly signed A record within the signed zone
+secure  IN      A       192.168.1.100
+
+; 2. BOGUS Case: Will be signed, then its RRSIG deliberately corrupted by setup script
+bogus   IN      A       192.168.1.102
+
+; 3. INSECURE Case: Delegated subzone with NO DS record in this parent zone
+insecure        IN      NS      ns1.insecure.iotlab.internal.
+ns1.insecure    IN      A       127.0.0.1
